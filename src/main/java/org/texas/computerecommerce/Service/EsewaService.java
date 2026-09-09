@@ -58,10 +58,12 @@ public class EsewaService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
 
+        // Check if payment already exists
         if (paymentRepository.findByOrder_OrderId(orderId).isPresent()) {
             throw new RuntimeException("Payment already initiated for this order!");
         }
 
+        // Create payment record
         Payment payment = new Payment();
         payment.setOrder(order);
         payment.setAmount(order.getTotalAmount());
@@ -70,8 +72,12 @@ public class EsewaService {
         payment.setTxnRef(txnUuid);
         paymentRepository.save(payment);
 
+        String amount = order.getTotalAmount().toPlainString();
+
+        // Build payment data for eSewa
         Map<String, String> paymentData = new HashMap<>();
-        paymentData.put("amount", String.valueOf(order.getTotalAmount()));
+        paymentData.put("amount", amount);
+        paymentData.put("total_amount", amount);
         paymentData.put("tax_amount", "0");
         paymentData.put("product_service_charge", "0");
         paymentData.put("product_delivery_charge", "0");
@@ -81,22 +87,16 @@ public class EsewaService {
         paymentData.put("failure_url", failureUrl);
         paymentData.put("signed_field_names", "total_amount,transaction_uuid,product_code");
 
+        // Generate signature
         String signature = generateSignature(paymentData);
         paymentData.put("signature", signature);
+        paymentData.put("paymentUrl", sandboxUrl);
 
-        Map<String, String> response = new HashMap<>();
-        response.put("paymentUrl", sandboxUrl);
-        response.put("txnRef", txnUuid);
-        response.put("amount", String.valueOf(order.getTotalAmount()));
-
-        return response;
+        return paymentData;
     }
 
     private String generateSignature(Map<String, String> data) {
         try {
-            // Log the secret key to verify it's not null
-            System.out.println("Secret Key in generateSignature: " + secretKey);
-
             String signedFieldNames = data.get("signed_field_names");
             String[] fields = signedFieldNames.split(",");
 

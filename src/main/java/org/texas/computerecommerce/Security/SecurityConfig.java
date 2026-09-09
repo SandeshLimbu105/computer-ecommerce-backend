@@ -1,6 +1,6 @@
 package org.texas.computerecommerce.Security;
+
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,7 +20,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private CustomUserDetailsService userDetailsService;
-
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
@@ -29,22 +28,27 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                // ===== PUBLIC ENDPOINTS (No Login Required) =====
-                .requestMatchers("/api/auth/**").permitAll()   // ← Register & Login are public
-                .requestMatchers("/api/products/**").permitAll()
-                .requestMatchers("/api/categories/**").permitAll()
+                        // ===== PUBLIC ENDPOINTS (No Login Required) =====
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/categories/**").permitAll()
+                        .requestMatchers("/api/recommendations/**").permitAll()
 
-                // ===== PROTECTED ENDPOINTS (Login Required) =====
-                .requestMatchers("/api/cart/**").hasAnyRole("CUSTOMER", "ADMIN")
-                .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN")
-                .requestMatchers("/api/payments/**").hasAnyRole("CUSTOMER", "ADMIN")
-                .requestMatchers("/api/reviews/**").hasAnyRole("CUSTOMER", "ADMIN")
+                        // ✅ FIX: Allow eSewa callbacks without JWT
+                        .requestMatchers("/api/payments/esewa/success").permitAll()
+                        .requestMatchers("/api/payments/esewa/failure").permitAll()
 
-                // ===== ADMIN ONLY =====
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // ===== PROTECTED ENDPOINTS (Login Required) =====
+                        .requestMatchers("/api/cart/**").hasAnyRole("CUSTOMER", "ADMIN")
+                        .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN")
+                        .requestMatchers("/api/payments/**").hasAnyRole("CUSTOMER", "ADMIN")
+                        .requestMatchers("/api/reviews/**").hasAnyRole("CUSTOMER", "ADMIN")
 
-                .anyRequest().authenticated()
-        )
+                        // ===== ADMIN ONLY =====
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
