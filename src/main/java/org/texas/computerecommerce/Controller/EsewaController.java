@@ -1,6 +1,5 @@
 package org.texas.computerecommerce.Controller;
 
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +11,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments/esewa")
-// ❌ Remove @AllArgsConstructor
 public class EsewaController {
 
     private final EsewaService esewaService;
@@ -20,7 +18,6 @@ public class EsewaController {
     @Value("${frontend.base.url}")
     private String frontendBaseUrl;
 
-    // ✅ Create constructor manually
     public EsewaController(EsewaService esewaService) {
         this.esewaService = esewaService;
     }
@@ -45,7 +42,9 @@ public class EsewaController {
     }
 
     @GetMapping("/failure")
-    public ResponseEntity<Void> failure(@RequestParam String data) {
+    public ResponseEntity<Void> failure(
+            @RequestParam(value = "data", required = false) String data) {
+        // ✅ FIXED: data is optional - eSewa may not send it on failure
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(frontendBaseUrl + "/payment-result?status=failure"))
                 .build();

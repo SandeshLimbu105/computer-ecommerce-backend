@@ -58,19 +58,27 @@ public class EsewaService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
 
-        // Check if payment already exists
-        if (paymentRepository.findByOrder_OrderId(orderId).isPresent()) {
-            throw new RuntimeException("Payment already initiated for this order!");
-        }
+        // ✅ CHECK IF PAYMENT ALREADY EXISTS - REUSE IT
+        Payment existingPayment = paymentRepository.findByOrder_OrderId(orderId).orElse(null);
 
-        // Create payment record
-        Payment payment = new Payment();
-        payment.setOrder(order);
-        payment.setAmount(order.getTotalAmount());
-        payment.setStatus("PENDING");
-        String txnUuid = UUID.randomUUID().toString();
-        payment.setTxnRef(txnUuid);
-        paymentRepository.save(payment);
+        String txnUuid;
+        if (existingPayment != null) {
+            // ✅ Reuse existing payment
+            System.out.println("✅ Reusing existing payment for order: " + orderId);
+            txnUuid = existingPayment.getTxnRef();
+            System.out.println("Existing TxnRef: " + txnUuid);
+        } else {
+            // ✅ Create new payment
+            System.out.println("✅ Creating new payment for order: " + orderId);
+            Payment payment = new Payment();
+            payment.setOrder(order);
+            payment.setAmount(order.getTotalAmount());
+            payment.setStatus("PENDING");
+            txnUuid = UUID.randomUUID().toString();
+            payment.setTxnRef(txnUuid);
+            paymentRepository.save(payment);
+            System.out.println("New TxnRef: " + txnUuid);
+        }
 
         String amount = order.getTotalAmount().toPlainString();
 

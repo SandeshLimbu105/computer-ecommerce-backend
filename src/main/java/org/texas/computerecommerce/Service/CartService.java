@@ -8,6 +8,7 @@ import org.texas.computerecommerce.Repository.CartRepository;
 import org.texas.computerecommerce.Repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CartService {
@@ -22,14 +23,35 @@ public class CartService {
     private ProductRepository productRepository;
 
     public Cart getCartByUserId(Long userId) {
-        return (Cart) cartRepository.findByUser_UserId(userId)
+        return cartRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
     }
 
+    @Transactional
     public Cart addItemToCart(Long userId, Long productId, int quantity) {
+        System.out.println("=== Adding item to cart ===");
+        System.out.println("User ID: " + userId);
+        System.out.println("Product ID: " + productId);
+        System.out.println("Quantity: " + quantity);
+
+        // Get user's cart
         Cart cart = getCartByUserId(userId);
+        System.out.println("Cart found: " + cart.getCartId());
+
+        // Check if product exists
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
+                .orElseThrow(() -> {
+                    System.err.println("Product not found: " + productId);
+                    return new RuntimeException("Product not found: " + productId);
+                });
+        System.out.println("Product found: " + product.getName());
+        System.out.println("Stock available: " + product.getStockQty());
+
+        // Check stock
+        if (product.getStockQty() < quantity) {
+            System.err.println("Insufficient stock! Available: " + product.getStockQty() + ", Requested: " + quantity);
+            throw new RuntimeException("Insufficient stock for product: " + product.getName());
+        }
 
         // Check if product already in cart
         CartItem existingItem = cartItemRepository.findByCart_CartIdAndProduct_ProductId(
@@ -37,10 +59,13 @@ public class CartService {
 
         if (existingItem != null) {
             // Update quantity
-            existingItem.setQuantity(existingItem.getQuantity() + quantity);
+            int newQuantity = existingItem.getQuantity() + quantity;
+            System.out.println("Updating existing item from " + existingItem.getQuantity() + " to " + newQuantity);
+            existingItem.setQuantity(newQuantity);
             cartItemRepository.save(existingItem);
         } else {
             // Add new item
+            System.out.println("Adding new item to cart");
             CartItem cartItem = new CartItem();
             cartItem.setCart(cart);
             cartItem.setProduct(product);
@@ -49,9 +74,11 @@ public class CartService {
             cart.getCartItems().add(cartItem);
         }
 
-        return cartRepository.save(cart);
+        Cart updatedCart = cartRepository.save(cart);
+        System.out.println("Cart updated successfully!");
+        return updatedCart;
     }
-
+@Transactional
     public Cart updateCartItem(Long cartItemId, int quantity) {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found: " + cartItemId));
@@ -64,7 +91,7 @@ public class CartService {
         cartItemRepository.save(cartItem);
         return cartRepository.findById(cartItem.getCart().getCartId()).orElseThrow();
     }
-
+@Transactional
     public Cart removeItemFromCart(Long cartItemId) {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found: " + cartItemId));
@@ -74,7 +101,7 @@ public class CartService {
 
         return cartRepository.findById(cartId).orElseThrow();
     }
-
+@Transactional
     public void clearCart(Long userId) {
         Cart cart = getCartByUserId(userId);
         cartItemRepository.deleteByCart_CartId(cart.getCartId());

@@ -24,7 +24,7 @@ public class CartController {
         return ResponseEntity.ok(convertToDTO(cart));
     }
 
-    @PostMapping("/{userId}/items")
+    @PostMapping("/{userId}/add")
     public ResponseEntity<CartDTO> addItemToCart(
             @PathVariable Long userId,
             @RequestBody AddCartRequestDTO request) {
@@ -32,11 +32,12 @@ public class CartController {
         return ResponseEntity.ok(convertToDTO(cart));
     }
 
+    // ✅ FIXED: Changed @RequestParam AddCartRequestDTO to @RequestParam Integer quantity
     @PutMapping("/items/{cartItemId}")
     public ResponseEntity<CartDTO> updateCartItem(
             @PathVariable Long cartItemId,
-            @RequestBody AddCartRequestDTO request) {
-        Cart cart = cartService.updateCartItem(cartItemId, request.getQuantity());
+            @RequestParam Integer quantity) {
+        Cart cart = cartService.updateCartItem(cartItemId, quantity);
         return ResponseEntity.ok(convertToDTO(cart));
     }
 

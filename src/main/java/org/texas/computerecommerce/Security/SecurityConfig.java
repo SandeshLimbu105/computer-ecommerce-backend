@@ -33,6 +33,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/recommendations/**").permitAll()
+                        // ✅ Add this to permit analytics tracking (public)
+                        .requestMatchers("/api/admin/analytics/track").permitAll()
+
 
                         // ✅ FIX: Allow eSewa callbacks without JWT
                         .requestMatchers("/api/payments/esewa/success").permitAll()
@@ -46,6 +49,8 @@ public class SecurityConfig {
 
                         // ===== ADMIN ONLY =====
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // ✅ Add this to protect analytics data (admin only)
+                        .requestMatchers("/api/admin/analytics").hasRole("ADMIN")
 
                         .anyRequest().authenticated()
                 )
