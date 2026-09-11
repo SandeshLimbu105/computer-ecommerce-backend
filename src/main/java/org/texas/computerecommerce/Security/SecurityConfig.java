@@ -89,7 +89,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",                                    // Local Vite dev
                 "http://localhost:3000",                                    // Alternative local
-                "https://computer-ecommerce-frontend.vercel.app"            // Production Vercel
+                "https://computer-ecommerce-frontend.vercel.app"           // Production Vercel
         ));
 
         // Allowed HTTP methods
