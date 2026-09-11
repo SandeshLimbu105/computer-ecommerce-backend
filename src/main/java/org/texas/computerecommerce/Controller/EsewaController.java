@@ -28,23 +28,26 @@ public class EsewaController {
         return ResponseEntity.ok(response);
     }
 
+    // ✅ FIX (bug #7): pass orderId to frontend for accurate purchase tracking
     @GetMapping("/success")
     public ResponseEntity<Void> success(@RequestParam String data) {
         String status = "success";
+        Long orderId = null;
         try {
-            esewaService.verifyPaymentCallback(data);
+            orderId = esewaService.verifyPaymentCallback(data).getOrderId();
         } catch (Exception e) {
             status = "failure";
         }
+        String redirect = frontendBaseUrl + "/payment-result?status=" + status
+                + (orderId != null ? "&orderId=" + orderId : "");
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(frontendBaseUrl + "/payment-result?status=" + status))
+                .location(URI.create(redirect))
                 .build();
     }
 
     @GetMapping("/failure")
     public ResponseEntity<Void> failure(
             @RequestParam(value = "data", required = false) String data) {
-        // ✅ FIXED: data is optional - eSewa may not send it on failure
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(frontendBaseUrl + "/payment-result?status=failure"))
                 .build();

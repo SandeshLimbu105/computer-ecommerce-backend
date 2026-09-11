@@ -63,12 +63,10 @@ public class EsewaService {
 
         String txnUuid;
         if (existingPayment != null) {
-            // ✅ Reuse existing payment
             System.out.println("✅ Reusing existing payment for order: " + orderId);
             txnUuid = existingPayment.getTxnRef();
             System.out.println("Existing TxnRef: " + txnUuid);
         } else {
-            // ✅ Create new payment
             System.out.println("✅ Creating new payment for order: " + orderId);
             Payment payment = new Payment();
             payment.setOrder(order);
@@ -134,7 +132,8 @@ public class EsewaService {
         }
     }
 
-    public String verifyPaymentCallback(String encodedData) {
+    // ✅ FIX (bug #6): Return Order instead of String
+    public Order verifyPaymentCallback(String encodedData) {
         try {
             String decoded = new String(Base64.getDecoder().decode(encodedData));
             System.out.println("Decoded: " + decoded);
@@ -155,25 +154,24 @@ public class EsewaService {
             Payment payment = paymentRepository.findByTxnRef(txnRef)
                     .orElseThrow(() -> new RuntimeException("Payment not found: " + txnRef));
 
+            Order order = payment.getOrder();
+
             if ("COMPLETE".equalsIgnoreCase(status)) {
                 payment.setStatus("SUCCESS");
                 paymentRepository.save(payment);
 
-                Order order = payment.getOrder();
                 order.setStatus("CONFIRMED");
                 orderRepository.save(order);
-
-                return "Payment successful!";
             } else {
                 payment.setStatus("FAILED");
                 paymentRepository.save(payment);
 
-                Order order = payment.getOrder();
                 order.setStatus("FAILED");
                 orderRepository.save(order);
-
-                return "Payment failed!";
             }
+
+            // ✅ Return the Order object so controller can extract orderId
+            return order;
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to verify payment: " + e.getMessage());

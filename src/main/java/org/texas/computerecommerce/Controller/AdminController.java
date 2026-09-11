@@ -27,6 +27,10 @@ public class AdminController {
     @Autowired
     private OrderController orderController;
 
+    // ✅ FIX (bug #3): Inject ProductController via Spring instead of `new`
+    @Autowired
+    private ProductController productController;
+
     @GetMapping("/orders")
     public ResponseEntity<List<OrderDTO>> getAllOrders() {
         List<Order> orders = orderService.getAllOrders();
@@ -53,7 +57,7 @@ public class AdminController {
         productService.updateStock(productId, stockQty);
         Product product = productService.getProductById(productId);
 
-        ProductController productController = new ProductController();
+        // ✅ FIX: Use the injected bean instead of `new ProductController()`
         return ResponseEntity.ok(productController.convertToDTO(product));
     }
 }

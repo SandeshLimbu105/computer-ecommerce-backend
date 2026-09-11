@@ -13,8 +13,21 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    // ✅ FIX: dedicated handler so ownership violations return 403 Forbidden
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleForbidden(
+            ForbiddenOperationException ex, WebRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("message", ex.getMessage());
+        response.put("status", HttpStatus.FORBIDDEN.value());
+        response.put("path", request.getDescription(false).replace("uri=", ""));
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex, WebRequest request) {
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(
+            RuntimeException ex, WebRequest request) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("message", ex.getMessage());
@@ -24,7 +37,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex, WebRequest request) {
+    public ResponseEntity<Map<String, Object>> handleGlobalException(
+            Exception ex, WebRequest request) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("message", "An unexpected error occurred");

@@ -4,6 +4,8 @@ import org.texas.computerecommerce.Dto.ProductDTO;
 import org.texas.computerecommerce.Dto.ReviewDTO;
 import org.texas.computerecommerce.Dto.UserDTO;
 import org.texas.computerecommerce.Entity.Review;
+import org.texas.computerecommerce.Entity.User;
+import org.texas.computerecommerce.Security.SecurityUtils;
 import org.texas.computerecommerce.Service.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,10 @@ public class ReviewController {
 
     @PostMapping
     public ResponseEntity<ReviewDTO> createReview(@RequestBody Review review) {
+        // ✅ FIX (bug #7): the review author is always the authenticated caller,
+        // never whatever user object the client put in the request body.
+        User currentUser = SecurityUtils.getCurrentUser();
+        review.setUser(currentUser);
         Review created = reviewService.createReview(review);
         return new ResponseEntity<>(convertToDTO(created), HttpStatus.CREATED);
     }
@@ -46,6 +52,9 @@ public class ReviewController {
 
     @DeleteMapping("/{reviewId}")
     public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
+        // ✅ FIX (bug #6): only the review's own author (or an admin) may delete it.
+        Review existing = reviewService.getReviewById(reviewId);
+        SecurityUtils.requireSelfOrAdmin(existing.getUser().getUserId());
         reviewService.deleteReview(reviewId);
         return ResponseEntity.noContent().build();
     }

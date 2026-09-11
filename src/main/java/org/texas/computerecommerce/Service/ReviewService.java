@@ -30,11 +30,22 @@ public class ReviewService {
         Product product = productRepository.findById(review.getProduct().getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found: " + review.getProduct().getProductId()));
 
+        // ✅ FIX (bug #12): reject ratings outside the valid 1-5 range
+        if (review.getRating() == null || review.getRating() < 1 || review.getRating() > 5) {
+            throw new RuntimeException("Rating must be between 1 and 5.");
+        }
+
         review.setUser(user);
         review.setProduct(product);
         review.setCreatedAt(LocalDateTime.now());
 
         return reviewRepository.save(review);
+    }
+
+    // ✅ NEW (fix for bug #6): lets the controller check ownership before delete
+    public Review getReviewById(Long reviewId) {
+        return reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found: " + reviewId));
     }
 
     public List<Review> getReviewsByProductId(Long productId) {

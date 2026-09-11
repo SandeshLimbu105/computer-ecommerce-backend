@@ -33,13 +33,12 @@ public class AuthService {
             throw new IllegalArgumentException("User already exists with this email!");
         }
 
-        // 2. Determine role
-        RoleType role;
-        if (registerRequestDTO.getRole() != null && registerRequestDTO.getRole().equalsIgnoreCase("ADMIN")) {
-            role = RoleType.ADMIN;
-        } else {
-            role = RoleType.CUSTOMER;
-        }
+        // 2. Determine role.
+        // ✅ SECURITY FIX: Public self-registration ALWAYS creates CUSTOMER.
+        // The role field from the request is intentionally ignored to prevent
+        // anyone from registering as ADMIN.
+        // Admin accounts must be created directly in the database (see docs below).
+        RoleType role = RoleType.CUSTOMER;
 
         // 3. Create and save user
         User user = User.builder()

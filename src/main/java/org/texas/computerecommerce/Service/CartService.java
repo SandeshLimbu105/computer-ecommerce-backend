@@ -27,6 +27,13 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
     }
 
+    // ✅ NEW: ownership helper for controller endpoints that only receive a cartItemId
+    public Long getOwnerUserId(Long cartItemId) {
+        CartItem item = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new RuntimeException("Cart item not found: " + cartItemId));
+        return item.getCart().getUser().getUserId();
+    }
+
     @Transactional
     public Cart addItemToCart(Long userId, Long productId, int quantity) {
         System.out.println("=== Adding item to cart ===");
@@ -46,6 +53,11 @@ public class CartService {
                 });
         System.out.println("Product found: " + product.getName());
         System.out.println("Stock available: " + product.getStockQty());
+
+        // ✅ FIX (bug #12): reject non-positive quantities
+        if (quantity <= 0) {
+            throw new RuntimeException("Quantity must be greater than zero.");
+        }
 
         // Check stock
         if (product.getStockQty() < quantity) {
@@ -78,7 +90,8 @@ public class CartService {
         System.out.println("Cart updated successfully!");
         return updatedCart;
     }
-@Transactional
+
+    @Transactional
     public Cart updateCartItem(Long cartItemId, int quantity) {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found: " + cartItemId));
@@ -91,7 +104,8 @@ public class CartService {
         cartItemRepository.save(cartItem);
         return cartRepository.findById(cartItem.getCart().getCartId()).orElseThrow();
     }
-@Transactional
+
+    @Transactional
     public Cart removeItemFromCart(Long cartItemId) {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found: " + cartItemId));
@@ -101,7 +115,8 @@ public class CartService {
 
         return cartRepository.findById(cartId).orElseThrow();
     }
-@Transactional
+
+    @Transactional
     public void clearCart(Long userId) {
         Cart cart = getCartByUserId(userId);
         cartItemRepository.deleteByCart_CartId(cart.getCartId());
